@@ -191,10 +191,38 @@ public class MainActivity extends AppCompatActivity {
         String[] names = new String[items.size()];
         for (int i = 0; i < items.size(); i++) names[i] = items.get(i).optString("name");
 
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(folder.optString("name"))
-                .setItems(names, (dialog, which) -> openProject(items.get(which)))
+                .setMessage("Mantén presionado un archivo para renombrarlo")
+                .setItems(names, (d, which) -> openProject(items.get(which)))
                 .setNegativeButton("Cerrar", null)
+                .create();
+        dialog.show();
+        dialog.getListView().setOnItemLongClickListener((parent, view, position, id) -> {
+            dialog.dismiss();
+            showRenameProjectDialog(items.get(position), folder);
+            return true;
+        });
+    }
+
+    private void showRenameProjectDialog(JSONObject project, JSONObject folder) {
+        EditText input = new EditText(this);
+        input.setText(project.optString("name"));
+        input.setSelection(input.getText().length());
+        new AlertDialog.Builder(this)
+                .setTitle("Renombrar archivo")
+                .setView(input)
+                .setPositiveButton("Guardar", (d, w) -> {
+                    String newName = input.getText().toString().trim();
+                    if (newName.isEmpty()) return;
+                    try {
+                        project.put("name", newName);
+                    } catch (JSONException ignored) {}
+                    saveData();
+                    Toast.makeText(this, "Renombrado", Toast.LENGTH_SHORT).show();
+                    showFolderContents(folder);
+                })
+                .setNegativeButton("Cancelar", (d, w) -> showFolderContents(folder))
                 .show();
     }
 
